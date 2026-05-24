@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  disabled
+}
+
+enum MeetingStatus {
+  active
+  dissolved
+  expired
+}
+
+enum ParticipantRole {
+  host
+  guest
+}
+
+enum WhiteboardEventType {
+  stroke_add
+  image_add
+  stroke_undo
+  image_undo
+  board_clear
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  displayName  String
+  passwordHash String
+  status       UserStatus @default(active)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  meetings     Meeting[]
+}
+
+model Meeting {
+  id              String          @id @default(cuid())
+  roomCode        String          @unique
+  title           String
+  hostId          String
+  host            User            @relation(fields: [hostId], references: [id])
+  passwordHash    String?
+  status          MeetingStatus   @default(active)
+  allChatMuted    Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  dissolvedAt     DateTime?
+  expiredAt       DateTime?
+  participants    Participant[]
+  chatMessages    ChatMessage[]
+  whiteboardEvents WhiteboardEvent[]
+  files           FileRecord[]
+  mediaLocks      MediaLock[]
+
+  @@index([hostId, createdAt])
+  @@index([status, createdAt])
+}
+
+model Participant {
+  id                 String          @id @default(cuid())
+  meetingId          String
+  meeting            Meeting         @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  identity           String
+  displayName        String
+  role               ParticipantRole
+  participantKeyHash String
+  joinedAt           DateTime        @default(now())
+  leftAt             DateTime?
+  chatMuted          Boolean         @default(false)
+  chatMessages       ChatMessage[]
+  whiteboardEvents   WhiteboardEvent[]
+  filesSent          FileRecord[]    @relation("SentFiles")
+  filesReceived      FileRecord[]    @relation("TargetFiles")
+  mediaLock          MediaLock?
+
+  @@unique([meetingId, identity])
+  @@index([meetingId, joinedAt])
+}
+
+model ChatMessage {
+  id            String      @id @default(cuid())
+  meetingId     String
+  meeting       Meeting     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  content       String
+  createdAt     DateTime    @default(now())
+
+  @@index([meetingId, createdAt])
+}
+
+model WhiteboardEvent {
+  id            String              @id @default(cuid())
+  meetingId     String
+  meeting       Meeting             @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  participantId String?
+  participant   Participant?        @relation(fields: [participantId], references: [id], onDelete: SetNull)
+  type          WhiteboardEventType
+  payload       Json
+  createdAt     DateTime            @default(now())
+
+  @@index([meetingId, createdAt])
+}
+
+model FileRecord {
+  id                  String       @id @default(cuid())
+  meetingId           String
+  meeting             Meeting      @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  senderParticipantId String
+  senderParticipant   Participant  @relation("SentFiles", fields: [senderParticipantId], references: [id], onDelete: Cascade)
+  targetParticipantId String?
+  targetParticipant   Participant? @relation("TargetFiles", fields: [targetParticipantId], references: [id], onDelete: SetNull)
+  objectKey           String       @unique
+  fileName            String
+  fileSize            BigInt
+  contentType         String
+  createdAt           DateTime     @default(now())
+
+  @@index([meetingId, createdAt])
+}
+
+model MediaLock {
+  id            String      @id @default(cuid())
+  meetingId     String
+  meeting       Meeting     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  participantId String      @unique
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  audioLocked   Boolean     @default(false)
+  videoLocked   Boolean     @default(false)
+  screenLocked  Boolean     @default(false)
+  updatedAt     DateTime    @updatedAt
+
+  @@index([meetingId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

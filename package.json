@@ -1,0 +1,27 @@
+{
+  "name": "rtclive-ts",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@11.2.2",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write .",
+    "db:migrate": "pnpm --filter @rtclive/api prisma migrate dev",
+    "db:push": "pnpm --filter @rtclive/api prisma db push",
+    "db:generate": "pnpm --filter @rtclive/api prisma generate",
+    "infra:up": "docker compose --env-file .env -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose --env-file .env -f infra/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0",
+    "vitest": "^2.1.8"
+  }
+}

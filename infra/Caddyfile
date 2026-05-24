@@ -1,0 +1,25 @@
+:80 {
+  encode gzip
+
+  handle /api/* {
+    reverse_proxy api:3000
+  }
+
+  handle /ws/* {
+    reverse_proxy api:3000
+  }
+
+  handle /rtc/* {
+    uri strip_prefix /rtc
+    reverse_proxy livekit:7880
+  }
+
+  handle /objects/* {
+    uri strip_prefix /objects
+    reverse_proxy minio:9000
+  }
+
+  handle {
+    reverse_proxy web:80
+  }
+}
