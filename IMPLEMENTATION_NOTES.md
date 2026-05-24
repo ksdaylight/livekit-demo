@@ -7,6 +7,7 @@
 - NestJS + Fastify API，统一 `/api/v1`。
 - Fastify 原生 WebSocket 路由，统一 `/ws/v1/rooms/:roomCode/*`。
 - Prisma PostgreSQL 数据模型。
+- Prisma CLI 使用 `apps/api/prisma.config.ts` 加载仓库根目录 `.env`；当前仍基于 Prisma 6.19，`schema.prisma` 需要保留 datasource `url`。
 - 主持人邮箱密码注册/登录、JWT access token、refresh token。
 - LiveKit token、创建房间、踢人、删除房间服务。
 - 会议创建、加入、离开、解散、历史记录。

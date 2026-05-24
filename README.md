@@ -65,6 +65,14 @@ pnpm db:generate
 pnpm db:push
 ```
 
+Prisma 说明：
+
+- 当前项目使用 `prisma@6.19.3` 和 `@prisma/client@6.19.3`。
+- `apps/api/prisma.config.ts` 会在运行 Prisma CLI 时加载仓库根目录 `.env`，解决 monorepo 下 `DATABASE_URL` 读不到的问题。
+- 在 Prisma 6.19 及以前，`apps/api/prisma/schema.prisma` 的 `datasource db` 仍需要保留 `url = env("DATABASE_URL")`。
+- 如果 `pnpm db:push` 报 `Environment variable not found: DATABASE_URL`，先确认已经在仓库根目录执行过 `cp .env.example .env`，并且 `.env` 里有 `DATABASE_URL`。
+- Prisma 7 会要求把 datasource URL 完整迁移到 `prisma.config.ts`，并为 Prisma Client 配置 driver adapter；升级到 Prisma 7 前不要单独删除 `schema.prisma` 里的 `url`。
+
 启动开发服务：
 
 ```bash

@@ -58,6 +58,13 @@ docker compose --env-file .env -f infra/docker-compose.yml exec api pnpm prisma 
 
 这里的 `exec api` 表示“进入正在运行的 `api` 后端容器执行命令”，不是进入 `apps/api` 目录。
 
+Prisma 配置说明：
+
+- 当前项目使用 `prisma@6.19.3`。
+- `apps/api/prisma.config.ts` 负责加载仓库根目录 `.env`，避免 monorepo 下 Prisma CLI 读不到 `DATABASE_URL`。
+- Prisma 6.19 及以前仍要求 `apps/api/prisma/schema.prisma` 的 datasource 中保留 `url = env("DATABASE_URL")`。
+- 全 Docker 模式下，`api` 容器会从 Compose 的 `environment` 拿到容器内连接地址，所以执行上面的 `exec api pnpm prisma db push` 不依赖宿主机的 `localhost:15432`。
+
 访问：
 
 ```text
