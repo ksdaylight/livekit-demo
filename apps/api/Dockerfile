@@ -20,4 +20,4 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages ./packages
 COPY --from=build /app/apps/api ./apps/api
 WORKDIR /app/apps/api
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/apps/api/src/main.js"]

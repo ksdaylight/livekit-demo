@@ -1,4 +1,3 @@
-import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -28,7 +27,6 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
   app.useGlobalFilters(new ZodExceptionFilter());
-  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
 
   const port = Number(config.get('API_PORT') ?? 3000);
   await app.listen(port, '0.0.0.0');

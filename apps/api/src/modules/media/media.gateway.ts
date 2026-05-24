@@ -1,10 +1,11 @@
-import { OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { ParticipantService } from '../participants/participant.service';
 import { RealtimeHubService } from '../realtime/realtime-hub.service';
 import { RtcliveSocket, sendSystemError } from '../realtime/ws-utils';
 import { MediaService } from './media.service';
 
+@Injectable()
 export class MediaGateway implements OnModuleInit {
   constructor(
     private readonly httpAdapterHost: HttpAdapterHost,

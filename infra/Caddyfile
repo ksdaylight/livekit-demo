@@ -9,8 +9,8 @@
     reverse_proxy api:3000
   }
 
-  handle /rtc/* {
-    uri strip_prefix /rtc
+  @livekit path /rtc /rtc/*
+  handle @livekit {
     reverse_proxy livekit:7880
   }
 

@@ -46,9 +46,14 @@ docker compose --env-file .env -f infra/docker-compose.yml up -d --build
 - `DATABASE_URL=postgresql://...@postgres:5432/...`
 - `REDIS_URL=redis://redis:6379`
 - `MINIO_ENDPOINT=minio`
+- `LIVEKIT_URL=same-origin`
 - `LIVEKIT_SERVER_URL=http://livekit:7880`
 
 这些覆盖只影响 `api` 容器，不会改写你的 `.env` 文件。
+
+`LIVEKIT_URL` 是发给浏览器的公开信令地址。保持 `same-origin` 时，浏览器会连当前站点的 `/rtc`，再由 Caddy 转到 `livekit:7880`。如果这里写成 `ws://localhost:7880`，远程用户的浏览器会去连用户自己电脑的 `localhost:7880`，常见表现就是 DevTools 里 `validate?... net::ERR_CONNECTION_REFUSED`，然后会议页断开。
+
+`LIVEKIT_NODE_IP` 是 LiveKit 发给浏览器的 WebRTC 媒体候选地址。服务器或局域网访问时要改成服务器 IP，例如 `LIVEKIT_NODE_IP=192.168.80.6`；只在服务器本机浏览器访问时才保持 `127.0.0.1`。如果这个值不对，信令会显示 connected，但授权摄像头/麦克风后没有音视频，控制台通常会出现 `NegotiationError: negotiation timed out`。
 
 首次启动后初始化数据库结构：
 
@@ -73,10 +78,10 @@ http://服务器IP:8080
 
 ## 3. 端口
 
-- `8080/TCP`：Web/API/WS 统一入口
+- `8080/TCP`：Web/API/WS/LiveKit 信令统一入口
 - `15432/TCP`：PostgreSQL 宿主机开发访问端口，容器内部仍使用 `5432`
 - `16379/TCP`：Redis 宿主机开发访问端口，容器内部仍使用 `6379`
-- `7880/TCP`：LiveKit HTTP/WebSocket
+- `7880/TCP`：LiveKit HTTP/WebSocket，使用 Caddy 同源 `/rtc` 代理时不需要直接暴露给公网
 - `7881/TCP`：LiveKit RTC TCP
 - `50000-50100/UDP`：LiveKit RTC UDP 示例范围
 - `9000/TCP`：MinIO API

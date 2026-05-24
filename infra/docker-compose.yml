@@ -40,8 +40,14 @@ services:
       "
 
   livekit:
-    image: livekit/livekit-server:v1.8
+    image: livekit/livekit-server:v1.9.12
     command: --dev --bind 0.0.0.0
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-secret}"
+      NODE_IP: ${LIVEKIT_NODE_IP:-127.0.0.1}
+      LIVEKIT_RTC_TCP_PORT: 7881
+      LIVEKIT_RTC_PORT_RANGE_START: 50000
+      LIVEKIT_RTC_PORT_RANGE_END: 50100
     ports:
       - "7880:7880"
       - "7881:7881"
@@ -57,6 +63,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
       REDIS_URL: redis://redis:6379
       MINIO_ENDPOINT: minio
+      LIVEKIT_URL: ${LIVEKIT_URL:-same-origin}
       LIVEKIT_SERVER_URL: http://livekit:7880
     depends_on:
       - postgres

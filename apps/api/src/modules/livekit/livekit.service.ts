@@ -15,7 +15,7 @@ export class LiveKitService {
   }
 
   getPublicUrl() {
-    return this.config.get<string>('LIVEKIT_URL') ?? 'ws://localhost:7880';
+    return this.config.get<string>('LIVEKIT_URL')?.trim() || 'same-origin';
   }
 
   async ensureRoom(roomCode: string) {

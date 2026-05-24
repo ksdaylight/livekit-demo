@@ -1,4 +1,4 @@
-import { Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { fileClientMessageSchema } from '@rtclive/shared';
 import { RtcliveSocket, parseJson, sendSystemError } from '../realtime/ws-utils';
@@ -6,6 +6,7 @@ import { RealtimeHubService } from '../realtime/realtime-hub.service';
 import { ParticipantService } from '../participants/participant.service';
 import { FileService } from './file.service';
 
+@Injectable()
 export class FileGateway implements OnModuleInit {
   private readonly logger = new Logger(FileGateway.name);
 

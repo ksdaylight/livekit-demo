@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { resolve } from 'path';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { ChatModule } from './chat/chat.module';
@@ -18,7 +19,10 @@ import { WhiteboardModule } from './whiteboard/whiteboard.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [resolve(process.cwd(), '.env'), resolve(process.cwd(), '../../.env')],
+    }),
     ScheduleModule.forRoot(),
     PrismaModule,
     RedisModule,

@@ -11,6 +11,10 @@ export default defineConfig({
         target: 'ws://localhost:3000',
         ws: true,
       },
+      '/rtc': {
+        target: 'http://localhost:7880',
+        ws: true,
+      },
     },
   },
 });

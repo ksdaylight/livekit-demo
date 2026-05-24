@@ -1,4 +1,4 @@
-import { Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { chatClientMessageSchema } from '@rtclive/shared';
 import { ParticipantService } from '../participants/participant.service';
@@ -6,6 +6,7 @@ import { RealtimeHubService } from '../realtime/realtime-hub.service';
 import { RtcliveSocket, parseJson, sendSystemError } from '../realtime/ws-utils';
 import { ChatService } from './chat.service';
 
+@Injectable()
 export class ChatGateway implements OnModuleInit {
   private readonly logger = new Logger(ChatGateway.name);
 

@@ -11,7 +11,7 @@
     "isolatedModules": false,
     "baseUrl": ".",
     "paths": {
-      "@rtclive/shared": ["packages/shared/src/index.ts"],
+      "@rtclive/shared": ["packages/shared/src/index"],
       "@rtclive/shared/*": ["packages/shared/src/*"]
     }
   }

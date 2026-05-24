@@ -57,6 +57,7 @@ docker compose --env-file .env -f infra/docker-compose.yml up -d postgres redis 
 - PostgreSQL 容器内部端口仍是 `5432`，宿主机访问端口是 `15432`。
 - Redis 容器内部端口仍是 `6379`，宿主机访问端口是 `16379`。
 - `.env.example` 默认适配宿主机运行 `pnpm dev`，所以写的是 `localhost:15432` 和 `localhost:16379`。
+- 如果你用 `http://192.168.x.x:5173` 这类局域网地址访问开发服务，把 `.env` 里的 `LIVEKIT_NODE_IP` 改成同一个宿主机 IP，否则 LiveKit 可能会把 `127.0.0.1` 或 Docker 容器 IP 发给浏览器，表现为授权后没有音视频画面、控制台里 `NegotiationError: negotiation timed out`。
 
 生成 Prisma Client 并迁移：
 
@@ -85,7 +86,7 @@ pnpm dev
 - API：`http://localhost:3000/api/v1`
 - PostgreSQL：`localhost:15432`
 - Redis：`localhost:16379`
-- LiveKit：`ws://localhost:7880`
+- LiveKit 信令：默认走 Web 同源 `/rtc` 代理；LiveKit 服务本身仍监听 `ws://localhost:7880`，媒体端口使用 `7881/TCP` 和 `50000-50100/UDP`
 - MinIO Console：`http://localhost:9001`
 
 ## 全 Docker 启动
@@ -101,7 +102,9 @@ docker compose --env-file .env -f infra/docker-compose.yml up -d --build
 - `DATABASE_URL` 覆盖为 `postgres:5432`
 - `REDIS_URL` 覆盖为 `redis:6379`
 - `MINIO_ENDPOINT` 覆盖为 `minio`
+- `LIVEKIT_URL` 默认使用 `same-origin`，浏览器会通过 `http://localhost:8080/rtc` 反代连接 LiveKit
 - `LIVEKIT_SERVER_URL` 覆盖为 `http://livekit:7880`
+- `LIVEKIT_NODE_IP` 用于 WebRTC 媒体连接；同机访问用 `127.0.0.1`，局域网或服务器访问要改成服务器 IP 或公网 IP。
 
 首次全 Docker 启动后初始化数据库：
 
@@ -117,7 +120,7 @@ docker compose --env-file .env -f infra/docker-compose.yml exec api pnpm prisma 
 
 ## 生产化说明
 
-第一版按单机 Docker Compose 设计，入口建议使用 `reverse-proxy` 暴露的 `http://localhost:8080`。正式部署时请修改 `.env` 中所有密钥、域名、LiveKit 地址和 MinIO 密码。
+第一版按单机 Docker Compose 设计，入口建议使用 `reverse-proxy` 暴露的 `http://localhost:8080`。`LIVEKIT_URL=same-origin` 表示前端用当前 Web 域名下的 `/rtc` 连接 LiveKit；如果你把 LiveKit 信令单独放在另一个域名，再改成 `wss://livekit.example.com`。正式部署时请修改 `.env` 中所有密钥、域名、LiveKit 地址和 MinIO 密码。
 
 ## 当前范围
 
