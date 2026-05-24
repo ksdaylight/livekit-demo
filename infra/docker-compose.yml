@@ -8,12 +8,12 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "15432:5432"
 
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "16379:6379"
 
   minio:
     image: minio/minio:RELEASE.2025-01-20T14-49-07Z
@@ -53,6 +53,11 @@ services:
       dockerfile: apps/api/Dockerfile
     env_file:
       - ../.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio
+      LIVEKIT_SERVER_URL: http://livekit:7880
     depends_on:
       - postgres
       - redis

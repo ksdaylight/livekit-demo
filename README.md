@@ -31,6 +31,12 @@ pnpm install
 docker compose --env-file .env -f infra/docker-compose.yml up -d postgres redis minio minio-init livekit
 ```
 
+默认端口不会占用本机已有的 PostgreSQL/Redis：
+
+- PostgreSQL 容器内部端口仍是 `5432`，宿主机访问端口是 `15432`。
+- Redis 容器内部端口仍是 `6379`，宿主机访问端口是 `16379`。
+- `.env.example` 默认适配宿主机运行 `pnpm dev`；如果用 Docker 启动 `api`，Compose 会自动覆盖为容器内地址 `postgres:5432` 和 `redis:6379`。
+
 生成 Prisma Client 并迁移：
 
 ```bash
@@ -48,6 +54,8 @@ pnpm dev
 
 - Web：`http://localhost:5173`
 - API：`http://localhost:3000/api/v1`
+- PostgreSQL：`localhost:15432`
+- Redis：`localhost:16379`
 - LiveKit：`ws://localhost:7880`
 - MinIO Console：`http://localhost:9001`
 

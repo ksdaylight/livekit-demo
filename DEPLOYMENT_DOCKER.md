@@ -47,13 +47,15 @@ http://服务器IP:8080
 ## 3. 端口
 
 - `8080/TCP`：Web/API/WS 统一入口
+- `15432/TCP`：PostgreSQL 宿主机开发访问端口，容器内部仍使用 `5432`
+- `16379/TCP`：Redis 宿主机开发访问端口，容器内部仍使用 `6379`
 - `7880/TCP`：LiveKit HTTP/WebSocket
 - `7881/TCP`：LiveKit RTC TCP
 - `50000-50100/UDP`：LiveKit RTC UDP 示例范围
 - `9000/TCP`：MinIO API
 - `9001/TCP`：MinIO Console
 
-生产环境建议用域名和 HTTPS，将 Caddy 改为自动签证书配置，并按 LiveKit 官方生产配置放开完整 UDP 端口范围。
+生产环境建议用域名和 HTTPS，将 Caddy 改为自动签证书配置，并按 LiveKit 官方生产配置放开完整 UDP 端口范围。PostgreSQL 和 Redis 的 `ports` 映射主要用于本机开发；生产环境如无外部访问需求，建议移除这两个映射或仅绑定到内网/本机地址。
 
 ## 4. 验收
 
