@@ -1,28 +1,34 @@
 generator client {
+  // 生成 TypeScript Prisma Client，供 Nest 服务层以类型安全方式访问数据库。
   provider = "prisma-client-js"
 }
 
 datasource db {
+  // 当前项目使用 PostgreSQL；连接串从 DATABASE_URL 注入，便于本地和 Docker 环境切换。
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+// 用户账号状态。disabled 预留给封禁/停用账号场景。
 enum UserStatus {
   active
   disabled
 }
 
+// 会议生命周期。active 是进行中，dissolved 是主持人主动解散，expired 是清理任务过期处理。
 enum MeetingStatus {
   active
   dissolved
   expired
 }
 
+// 参与者角色。host 拥有管理权限，guest 只能参与互动。
 enum ParticipantRole {
   host
   guest
 }
 
+// 白板事件类型采用事件溯源模型：新增/撤销/清空都记录为事件，便于新连接恢复完整状态。
 enum WhiteboardEventType {
   stroke_add
   image_add
@@ -31,10 +37,14 @@ enum WhiteboardEventType {
   board_clear
 }
 
+/// 注册用户。一个用户可以主持多个会议，密码只保存哈希。
 model User {
   id           String     @id @default(cuid())
+  /// 邮箱唯一且由应用层统一转为小写。
   email        String     @unique
+  /// 用户默认展示名，创建会议时可作为主持人昵称。
   displayName  String
+  /// Argon2 哈希后的密码，永远不返回给前端。
   passwordHash String
   status       UserStatus @default(active)
   createdAt    DateTime   @default(now())
@@ -42,17 +52,24 @@ model User {
   meetings     Meeting[]
 }
 
+/// 会议主表。会议号对外可见且唯一，内部 id 用于关系关联。
 model Meeting {
   id              String          @id @default(cuid())
+  /// 4 位会议号，应用层会标准化为大写。
   roomCode        String          @unique
   title           String
+  /// 主持人用户 id；只有登录用户可以创建会议并成为 host。
   hostId          String
   host            User            @relation(fields: [hostId], references: [id])
+  /// 可选会议密码哈希；为空表示公开会议。
   passwordHash    String?
   status          MeetingStatus   @default(active)
+  /// 全员聊天禁言开关，host 不受此限制。
   allChatMuted    Boolean         @default(false)
   createdAt       DateTime        @default(now())
+  /// 主持人解散会议时写入，便于历史记录展示。
   dissolvedAt     DateTime?
+  /// 清理任务标记过期会议时写入。
   expiredAt       DateTime?
   participants    Participant[]
   chatMessages    ChatMessage[]
@@ -64,16 +81,21 @@ model Meeting {
   @@index([status, createdAt])
 }
 
+/// 会议参与者。每次加入会议都会生成一条参与记录和独立 participantKey。
 model Participant {
   id                 String          @id @default(cuid())
   meetingId          String
   meeting            Meeting         @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  /// LiveKit/WebSocket 使用的会议内身份。
   identity           String
   displayName        String
   role               ParticipantRole
+  /// 参与者凭据只保存哈希，用于会议内 HTTP/WebSocket 操作认证。
   participantKeyHash String
   joinedAt           DateTime        @default(now())
+  /// 不为空表示该参与者已离会；历史消息和文件仍保留。
   leftAt             DateTime?
+  /// 单人聊天禁言开关。
   chatMuted          Boolean         @default(false)
   chatMessages       ChatMessage[]
   whiteboardEvents   WhiteboardEvent[]
@@ -85,6 +107,7 @@ model Participant {
   @@index([meetingId, joinedAt])
 }
 
+/// 聊天消息。删除会议或参与者时级联删除，避免孤立消息。
 model ChatMessage {
   id            String      @id @default(cuid())
   meetingId     String
@@ -97,6 +120,7 @@ model ChatMessage {
   @@index([meetingId, createdAt])
 }
 
+/// 白板事件。participant 允许置空，保证参与者删除/离会后历史白板仍能恢复。
 model WhiteboardEvent {
   id            String              @id @default(cuid())
   meetingId     String
@@ -110,16 +134,20 @@ model WhiteboardEvent {
   @@index([meetingId, createdAt])
 }
 
+/// 文件记录。实际文件保存在 MinIO，数据库只保存对象 key 和展示元数据。
 model FileRecord {
   id                  String       @id @default(cuid())
   meetingId           String
   meeting             Meeting      @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   senderParticipantId String
   senderParticipant   Participant  @relation("SentFiles", fields: [senderParticipantId], references: [id], onDelete: Cascade)
+  /// 私发文件的目标参与者；为空表示群发文件。
   targetParticipantId String?
   targetParticipant   Participant? @relation("TargetFiles", fields: [targetParticipantId], references: [id], onDelete: SetNull)
+  /// MinIO 中的唯一对象 key。
   objectKey           String       @unique
   fileName            String
+  /// 使用 BigInt 存储，兼容较大的上传文件。
   fileSize            BigInt
   contentType         String
   createdAt           DateTime     @default(now())
@@ -127,6 +155,7 @@ model FileRecord {
   @@index([meetingId, createdAt])
 }
 
+/// 参与者媒体锁。每个参与者最多一条记录，三个布尔位分别控制音频、视频和屏幕共享。
 model MediaLock {
   id            String      @id @default(cuid())
   meetingId     String
@@ -141,11 +170,14 @@ model MediaLock {
   @@index([meetingId])
 }
 
+/// 刷新令牌记录。只保存哈希，支持服务端撤销和过期清理。
 model RefreshToken {
   id        String   @id @default(cuid())
   userId    String
+  /// refresh token 哈希值唯一，避免同一 token 重复入库。
   tokenHash String   @unique
   expiresAt DateTime
+  /// 不为空表示该 refresh token 已被登出或轮换逻辑撤销。
   revokedAt DateTime?
   createdAt DateTime @default(now())
 

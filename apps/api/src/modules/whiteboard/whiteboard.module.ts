@@ -6,6 +6,7 @@ import { WhiteboardGateway } from './whiteboard.gateway';
 import { WhiteboardService } from './whiteboard.service';
 
 @Module({
+  // 白板模块既要校验参与者，也要把图片保存到对象存储。
   imports: [ParticipantModule, StorageModule],
   controllers: [WhiteboardController],
   providers: [WhiteboardService, WhiteboardGateway],

@@ -7,6 +7,7 @@ import { ParticipantService } from '../participants/participant.service';
 import { FileService } from './file.service';
 
 @Injectable()
+// 文件 WebSocket 网关：连接时下发可见文件快照，收到 file.ack 后广播对应文件消息。
 export class FileGateway implements OnModuleInit {
   private readonly logger = new Logger(FileGateway.name);
 
@@ -19,6 +20,7 @@ export class FileGateway implements OnModuleInit {
 
   onModuleInit() {
     const fastify = this.httpAdapterHost.httpAdapter.getInstance();
+    // 文件上传走 HTTP multipart，WebSocket 只负责文件消息通知和快照同步。
     fastify.get('/ws/v1/rooms/:roomCode/files', { websocket: true }, (connection: { socket: RtcliveSocket }, request: any) => {
       const socket = connection.socket;
       const roomCode = String(request.params.roomCode).toUpperCase();
@@ -36,6 +38,7 @@ export class FileGateway implements OnModuleInit {
       socket.identity = identity;
       socket.participantKey = participantKey;
       this.hub.add('files', roomCode, socket);
+      // 只返回当前参与者可见的文件：群发、自己发出的私发、发给自己的私发。
       const messages = await this.files.listVisible(roomCode, identity, participantKey);
       socket.send(JSON.stringify({ type: 'file.snapshot', messages }));
     } catch (error: any) {
@@ -55,6 +58,7 @@ export class FileGateway implements OnModuleInit {
       const messages = await this.files.listVisible(roomCode, socket.identity, socket.participantKey);
       const file = messages.find((item) => item.fileId === message.fileId);
       if (file) {
+        // 私发文件只广播给发送者和接收者；群发文件广播给房间内所有文件通道连接。
         this.hub.broadcast('files', roomCode, { type: 'file.message', message: file }, (target: any) => {
           return (
             !file.targetIdentity ||

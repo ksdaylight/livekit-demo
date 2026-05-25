@@ -1,6 +1,8 @@
+# Monorepo 工作区：应用放在 apps，复用包放在 packages。
 packages:
   - "apps/*"
   - "packages/*"
+# pnpm 11 默认限制依赖构建脚本；这里显式允许需要 native/generated 产物的依赖。
 allowBuilds:
   '@nestjs/core': true
   '@prisma/client': true

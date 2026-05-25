@@ -2,10 +2,12 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <!-- 移动端按设备宽度渲染，保证会议页侧边栏可以在窄屏下折叠成单列。 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>rtcLive TS</title>
   </head>
   <body>
+    <!-- React 挂载点，所有页面内容由 src/main.tsx 渲染。 -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

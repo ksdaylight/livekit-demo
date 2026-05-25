@@ -1,13 +1,18 @@
+# 排除 Git 元数据，避免构建上下文过大，也避免把本地历史打进镜像。
 .git/
+# 排除所有宿主机依赖目录；容器内依赖必须由 pnpm install 重新生成，不能混用 Windows/Linux 产物。
 node_modules/
 **/node_modules/
+# 排除本地构建产物，Docker build 会在镜像内重新执行构建。
 dist/
 **/dist/
 coverage/
 **/coverage/
+# 不把本机密钥/连接串打进镜像，运行时通过 compose env_file 注入。
 .env
 .env.*
 *.log
 playwright-report/
 test-results/
+# Vite 本地缓存只服务开发模式，镜像构建不需要。
 apps/web/.vite/

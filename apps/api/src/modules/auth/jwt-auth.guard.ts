@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
+// HTTP 登录态守卫。通过 Authorization: Bearer <accessToken> 验证用户并写入 request.user。
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwt: JwtService,
@@ -19,6 +20,7 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
+      // access token 只保存 user id，真正的用户状态仍然回查数据库，支持停用账号即时生效。
       const payload = await this.jwt.verifyAsync<{ sub: string }>(header.slice(7), {
         secret: this.config.get<string>('JWT_ACCESS_SECRET'),
       });
@@ -26,6 +28,7 @@ export class JwtAuthGuard implements CanActivate {
       if (!user || user.status !== 'active') {
         throw new UnauthorizedException('账号不可用');
       }
+      // 控制器通过 @CurrentUser() 读取该对象。
       request.user = { id: user.id, email: user.email, displayName: user.displayName };
       return true;
     } catch {

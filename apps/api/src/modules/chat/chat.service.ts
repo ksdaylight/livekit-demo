@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ParticipantService } from '../participants/participant.service';
 
 @Injectable()
+// 聊天服务负责消息落库、快照查询和禁言规则判断。
 export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
@@ -12,6 +13,7 @@ export class ChatService {
 
   async snapshot(roomCode: string, identity: string, participantKey: string) {
     const participant = await this.participants.requireParticipant(roomCode, identity, participantKey);
+    // 快照除了消息，还要带上禁言状态，前端才能正确禁用输入框。
     const meeting = await this.prisma.meeting.findUniqueOrThrow({
       where: { id: participant.meetingId },
       include: { participants: true },
@@ -20,6 +22,7 @@ export class ChatService {
       where: { meetingId: participant.meetingId },
       include: { participant: true, meeting: true },
       orderBy: { createdAt: 'asc' },
+      // 限制快照最大 300 条，避免长会议重连时传输过多历史消息。
       take: 300,
     });
     return {
@@ -32,6 +35,7 @@ export class ChatService {
   async append(roomCode: string, identity: string, participantKey: string, content: string) {
     const participant = await this.participants.requireParticipant(roomCode, identity, participantKey);
     const meeting = await this.prisma.meeting.findUniqueOrThrow({ where: { id: participant.meetingId } });
+    // 全员禁言和单人禁言都由服务端兜底，前端按钮禁用只是体验优化。
     if (meeting.allChatMuted) {
       throw new ForbiddenException('当前会议已开启全员聊天禁言');
     }
@@ -56,6 +60,7 @@ export class ChatService {
     content: string;
     createdAt: Date;
   }): ChatMessagePayload {
+    // 数据库模型转成前端契约，隐藏内部 meetingId/participantId。
     return {
       messageId: message.id,
       roomCode: message.meeting.roomCode,

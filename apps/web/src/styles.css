@@ -1,10 +1,12 @@
 :root {
+  /* 全局字体和底色，入口页与会议页都会继承这些基础 token。 */
   font-family: "Aptos", "Segoe UI", sans-serif;
   color: #172033;
   background: #f3efe5;
 }
 
 * {
+  /* 统一盒模型，避免 padding/border 让卡片和面板在响应式布局里溢出。 */
   box-sizing: border-box;
 }
 
@@ -15,10 +17,12 @@ body {
 button,
 input,
 select {
+  /* 表单控件继承页面字体，避免浏览器默认字体和应用字体不一致。 */
   font: inherit;
 }
 
 button {
+  /* 默认按钮样式用于主要操作，具体语义色由 .primary/.danger/.ghost 覆盖。 */
   border: 0;
   border-radius: 12px;
   padding: 10px 14px;
@@ -28,12 +32,14 @@ button {
 }
 
 button:disabled {
+  /* 禁用状态同时降低视觉权重并移除可点击暗示。 */
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 input,
 select {
+  /* 统一输入框外观，适配入口表单和主持人控制面板。 */
   width: 100%;
   border: 1px solid #d8d0c2;
   border-radius: 12px;
@@ -43,6 +49,7 @@ select {
 }
 
 .entry-page {
+  /* 入口页采用轻量渐变背景，突出创建/加入会议卡片。 */
   min-height: 100vh;
   padding: 48px;
   background:
@@ -52,11 +59,13 @@ select {
 }
 
 .hero {
+  /* hero 区只放产品名称和一句能力说明，不参与表单布局。 */
   max-width: 980px;
   margin-bottom: 32px;
 }
 
 .hero h1 {
+  /* clamp 限制大标题在移动端和桌面端的字号范围。 */
   margin: 0;
   font-size: clamp(42px, 8vw, 92px);
   line-height: 0.9;
@@ -77,6 +86,7 @@ select {
 }
 
 .entry-grid {
+  /* 三列表单布局：登录、创建、加入；宽卡片通过 .wide 跨列。 */
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
@@ -84,6 +94,7 @@ select {
 
 .card,
 .panel {
+  /* card 用于入口页表单，panel 用于会议页侧边栏，保持同一套视觉语言。 */
   border: 1px solid rgba(23, 32, 51, 0.1);
   border-radius: 24px;
   padding: 22px;
@@ -93,6 +104,7 @@ select {
 }
 
 .wide {
+  /* 入口页的列表区域需要横跨三列。 */
   grid-column: span 3;
 }
 
@@ -115,16 +127,19 @@ select {
 }
 
 .primary {
+  /* 主要动作使用暖色，和默认深色按钮区分。 */
   background: #cc5a32;
 }
 
 .ghost {
+  /* 次要动作保留边框，不抢主要按钮视觉层级。 */
   background: transparent;
   border: 1px solid #d6c9b7;
   color: #172033;
 }
 
 .danger {
+  /* 离开/解散等不可逆或高风险动作使用危险色。 */
   background: #8f2e25;
 }
 
@@ -143,18 +158,21 @@ select {
 }
 
 .room-row {
+  /* 会议列表每行保持统一间距，便于快速扫描会议号、标题和状态。 */
   padding: 12px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.62);
 }
 
 .meeting-page {
+  /* 会议页切到深色背景，降低视频区域周围的视觉干扰。 */
   min-height: 100vh;
   background: #101820;
   color: #f7efe0;
 }
 
 .meeting-topbar {
+  /* 顶部栏展示会议元信息和离开按钮，始终保持在页面上方。 */
   padding: 16px 22px;
   background: rgba(255, 250, 241, 0.08);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -168,6 +186,7 @@ select {
 }
 
 .meeting-layout {
+  /* 桌面端左侧视频占主要宽度，右侧固定 420px 放实时面板。 */
   display: grid;
   grid-template-columns: minmax(0, 1fr) 420px;
   gap: 16px;
@@ -175,6 +194,7 @@ select {
 }
 
 .video-area {
+  /* LiveKit 视频区域需要裁切内部内容，避免 tile 溢出圆角容器。 */
   min-height: calc(100vh - 100px);
   border-radius: 24px;
   overflow: hidden;
@@ -182,10 +202,12 @@ select {
 }
 
 .lk-grid {
+  /* 预留底部控制栏空间，防止视频网格被 ControlBar 覆盖。 */
   min-height: calc(100vh - 180px);
 }
 
 .side-panels {
+  /* 侧边栏独立滚动，视频区保持稳定，不随聊天/文件列表增长而抖动。 */
   display: grid;
   gap: 14px;
   align-content: start;
@@ -198,6 +220,7 @@ select {
 }
 
 .panel h3 {
+  /* 面板标题右侧显示连接状态。 */
   margin: 0 0 12px;
   display: flex;
   justify-content: space-between;
@@ -210,6 +233,7 @@ select {
 }
 
 .scroll-list {
+  /* 聊天和文件列表限制高度，避免单个面板撑满整页。 */
   display: grid;
   gap: 8px;
   max-height: 220px;
@@ -217,6 +241,7 @@ select {
 }
 
 .bubble {
+  /* 聊天气泡基础样式；自己的消息通过 .self 单独区分。 */
   padding: 10px;
   border-radius: 14px;
   background: #fff;
@@ -231,6 +256,7 @@ select {
 }
 
 .inline-form {
+  /* 聊天输入框和发送按钮保持一行，提高会议中发送效率。 */
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px;
@@ -238,6 +264,7 @@ select {
 }
 
 .file-row {
+  /* 文件消息呈现为可点击下载行。 */
   display: grid;
   gap: 4px;
   padding: 10px;
@@ -249,6 +276,7 @@ select {
 
 .admin-actions,
 .whiteboard-tools {
+  /* 主持人动作和白板工具都允许换行，窄屏下不会溢出。 */
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -265,6 +293,7 @@ select {
 }
 
 .whiteboard-panel canvas {
+  /* canvas 固定内部绘制尺寸，CSS 宽高负责响应式展示。 */
   width: 100%;
   height: 260px;
   border-radius: 18px;
@@ -274,12 +303,14 @@ select {
 }
 
 .banner {
+  /* 错误/权限/媒体能力提示横幅，放在会议顶部确保用户能立即看到。 */
   padding: 10px 16px;
   background: #f5c36d;
   color: #172033;
 }
 
 @media (max-width: 1100px) {
+  /* 窄屏下入口和会议页都改为单列布局，侧边栏移动到视频下方。 */
   .entry-page {
     padding: 24px;
   }

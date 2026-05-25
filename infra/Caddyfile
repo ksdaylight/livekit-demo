@@ -1,24 +1,30 @@
 :80 {
+  # 对静态资源和 JSON 响应启用 gzip 压缩，降低本地/局域网传输开销。
   encode gzip
 
+  # HTTP API 统一挂在 /api 下，转发到 Nest API 容器。
   handle /api/* {
     reverse_proxy api:3000
   }
 
+  # 业务 WebSocket 使用 /ws 前缀，仍然由 Nest API 内的 Fastify WebSocket 处理。
   handle /ws/* {
     reverse_proxy api:3000
   }
 
+  # LiveKit 浏览器信令使用 /rtc；same-origin 模式下前端不需要知道 LiveKit 容器地址。
   @livekit path /rtc /rtc/*
   handle @livekit {
     reverse_proxy livekit:7880
   }
 
+  # 文件公开下载使用 /objects 前缀；转发前去掉该前缀以匹配 MinIO bucket 路径。
   handle /objects/* {
     uri strip_prefix /objects
     reverse_proxy minio:9000
   }
 
+  # 其余路径交给前端静态站点，用于 React Router 或 Vite 构建后的 SPA 回退。
   handle {
     reverse_proxy web:80
   }
