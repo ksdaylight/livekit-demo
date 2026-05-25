@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "packageManager": "pnpm@11.2.2",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "pnpm --filter @rtclive/shared build && pnpm -r --parallel --filter @rtclive/api --filter @rtclive/web dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { roomCodeSchema, updateMeetingPasswordSchema } from './schemas';
+import { roomCodeSchema, updateMeetingPasswordSchema } from './schemas.js';
 
 describe('shared schemas', () => {
   it('normalizes meeting room codes', () => {
