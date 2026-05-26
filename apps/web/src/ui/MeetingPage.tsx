@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import {
   LiveKitRoom,
-  GridLayout,
-  ParticipantTile,
   RoomAudioRenderer,
-  ControlBar,
-  useTracks,
+  VideoTrack,
+  useIsSpeaking,
+  useLocalParticipant,
+  useParticipantTracks,
+  useParticipants,
 } from '@livekit/components-react';
+import type { JoinMeetingResponse, MediaControlPayload } from '@rtclive/shared';
 import { DisconnectReason, MediaDeviceFailure, Track } from 'livekit-client';
+import type { Participant } from 'livekit-client';
 import { api } from '../lib/api';
 import { localMediaUnavailableMessage } from '../lib/local-media';
 import { resolveLiveKitUrl } from '../lib/livekit-url';
 import { clearJoin, readJoin } from '../lib/session';
+import { wsUrl } from '../lib/ws';
 import { ChatPanel } from './panels/ChatPanel';
 import { FilePanel } from './panels/FilePanel';
 import { WhiteboardPanel } from './panels/WhiteboardPanel';
@@ -24,6 +29,7 @@ export function MeetingPage({ onExit }: { onExit: () => void }) {
   // 本地媒体不可用时仍允许进入会议，只是不自动发布音视频。
   const [mediaWarning] = useState(localMediaUnavailableMessage);
   const [error, setError] = useState('');
+  const [mediaControls, setMediaControls] = useState<MediaControlPayload[]>([]);
   // 避免用户点击离开、LiveKit onDisconnected、浏览器重连等路径重复调用 leave。
   const leavingRef = useRef(false);
 
@@ -119,38 +125,46 @@ export function MeetingPage({ onExit }: { onExit: () => void }) {
       {error && <div className="banner">{error}</div>}
       {mediaWarning && <div className="banner">{mediaWarning}</div>}
 
-      <div className="meeting-layout">
-        <section className="video-area">
-          {/* LiveKitRoom 管理信令连接、媒体发布和订阅；业务侧边栏走独立 WebSocket。 */}
-          <LiveKitRoom
-            serverUrl={livekitServerUrl}
-            token={activeJoin.livekitToken}
-            connect
-            video={canPublishLocalMedia}
-            audio={canPublishLocalMedia}
-            onError={handleLiveKitError}
-            onMediaDeviceFailure={handleMediaDeviceFailure}
-            onDisconnected={handleLiveKitDisconnected}
-          >
-            <VideoGrid />
-            <RoomAudioRenderer />
-            <ControlBar
-              controls={{
-                camera: canPublishLocalMedia,
-                microphone: canPublishLocalMedia,
-                screenShare: canPublishLocalMedia,
-              }}
-            />
-          </LiveKitRoom>
-        </section>
-        <aside className="side-panels">
-          {/* 管理面板只给主持人展示；其他实时面板所有角色都可使用。 */}
-          {activeJoin.role === 'host' && <AdminPanel join={activeJoin} onDissolved={leave} />}
-          <ChatPanel join={activeJoin} />
-          <FilePanel join={activeJoin} />
+      <div className={`meeting-layout ${activeJoin.role === 'host' ? 'with-admin' : 'without-admin'}`}>
+        <div className="meeting-main">
+          <section className="video-area">
+            {/* LiveKitRoom 管理信令连接、媒体发布和订阅；业务侧边栏走独立 WebSocket。 */}
+            <LiveKitRoom
+              serverUrl={livekitServerUrl}
+              token={activeJoin.livekitToken}
+              connect
+              video={canPublishLocalMedia}
+              audio={canPublishLocalMedia}
+              onError={handleLiveKitError}
+              onMediaDeviceFailure={handleMediaDeviceFailure}
+              onDisconnected={handleLiveKitDisconnected}
+            >
+              <MediaControlSync
+                join={activeJoin}
+                onKicked={exitToHome}
+                onError={setError}
+                onParticipants={setMediaControls}
+              />
+              <VideoGrid join={activeJoin} mediaControls={mediaControls} onError={setError} />
+              <RoomAudioRenderer />
+              <MeetingControlBar
+                canPublishLocalMedia={canPublishLocalMedia}
+                lock={mediaControls.find((item) => item.identity === activeJoin.identity)}
+                onError={setError}
+              />
+            </LiveKitRoom>
+          </section>
           <WhiteboardPanel join={activeJoin} />
-        </aside>
+        </div>
+        {activeJoin.role === 'host' && (
+          <aside className="side-panels">
+            {/* 管理面板只给主持人展示；聊天和文件恢复原版右下角浮窗。 */}
+            <AdminPanel join={activeJoin} participants={mediaControls} onDissolved={leave} />
+          </aside>
+        )}
       </div>
+      <ChatPanel join={activeJoin} />
+      <FilePanel join={activeJoin} participants={mediaControls} />
     </main>
   );
 }
@@ -171,18 +185,275 @@ function disconnectMessage(reason?: DisconnectReason) {
   }
 }
 
-function VideoGrid() {
-  // 同时订阅摄像头和屏幕共享轨道；摄像头没有画面时保留 placeholder。
-  const tracks = useTracks(
-    [
-      { source: Track.Source.Camera, withPlaceholder: true },
-      { source: Track.Source.ScreenShare, withPlaceholder: false },
-    ],
-    { onlySubscribed: false },
-  );
+function MediaControlSync({
+  join,
+  onKicked,
+  onError,
+  onParticipants,
+}: {
+  join: JoinMeetingResponse;
+  onKicked: () => void;
+  onError: (message: string) => void;
+  onParticipants: Dispatch<SetStateAction<MediaControlPayload[]>>;
+}) {
+  const { localParticipant } = useLocalParticipant();
+  const [currentLock, setCurrentLock] = useState<MediaControlPayload | undefined>();
+
+  useEffect(() => {
+    const socket = new WebSocket(
+      wsUrl(`/ws/v1/rooms/${join.roomCode}/media-control`, {
+        identity: join.identity,
+        participantKey: join.participantKey,
+      }),
+    );
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'media.snapshot') {
+        const participants = message.participants ?? [];
+        onParticipants(participants);
+        setCurrentLock(participants.find((item: MediaControlPayload) => item.identity === join.identity));
+      }
+      if (message.type === 'media.control' && message.participant) {
+        const participant = message.participant as MediaControlPayload;
+        onParticipants((participants) => upsertMediaControl(participants, participant));
+        if (participant.identity === join.identity) setCurrentLock(participant);
+      }
+      if (message.type === 'participant.kicked' && message.targetIdentity === join.identity) {
+        onKicked();
+      }
+      if (message.type === 'system.error') onError(message.message);
+    };
+    socket.onclose = () => {
+      onParticipants([]);
+      setCurrentLock(undefined);
+    };
+    return () => socket.close();
+  }, [join, onError, onKicked, onParticipants]);
+
+  useEffect(() => {
+    if (!currentLock) return;
+    if (currentLock.audioLocked && localParticipant.isMicrophoneEnabled) {
+      void localParticipant.setMicrophoneEnabled(false).catch((error) => onError(error.message || '无法关闭麦克风'));
+    }
+    if (currentLock.videoLocked && localParticipant.isCameraEnabled) {
+      void localParticipant.setCameraEnabled(false).catch((error) => onError(error.message || '无法关闭摄像头'));
+    }
+    if (currentLock.screenLocked && localParticipant.isScreenShareEnabled) {
+      void localParticipant.setScreenShareEnabled(false).catch((error) => onError(error.message || '无法停止屏幕共享'));
+    }
+  }, [currentLock, localParticipant, onError]);
+
+  return null;
+}
+
+function VideoGrid({
+  join,
+  mediaControls,
+  onError,
+}: {
+  join: JoinMeetingResponse;
+  mediaControls: MediaControlPayload[];
+  onError: (message: string) => void;
+}) {
+  const participants = useParticipants();
+  const [preview, setPreview] = useState<{ title: string; kind: 'camera' | 'screen'; trackRef: any } | null>(null);
+
   return (
-    <GridLayout tracks={tracks} className="lk-grid">
-      <ParticipantTile />
-    </GridLayout>
+    <>
+      <div className="meeting-grid">
+        {participants.map((participant) => (
+          <ParticipantCard
+            key={participant.identity}
+            participant={participant}
+            join={join}
+            lock={mediaControls.find((item) => item.identity === participant.identity)}
+            onPreview={(trackRef, title, kind) => setPreview({ trackRef, title, kind })}
+            onError={onError}
+          />
+        ))}
+      </div>
+
+      {preview && (
+        <div className="preview-modal" role="dialog" aria-modal="true">
+          <div className="preview-toolbar">
+            <span>{preview.title}</span>
+            <button onClick={() => setPreview(null)}>关闭</button>
+          </div>
+          <div className={`preview-content video-${preview.kind}`}>
+            <VideoTrack trackRef={preview.trackRef} />
+          </div>
+        </div>
+      )}
+    </>
   );
+}
+
+function ParticipantCard({
+  participant,
+  join,
+  lock,
+  onPreview,
+  onError,
+}: {
+  participant: Participant;
+  join: JoinMeetingResponse;
+  lock?: MediaControlPayload;
+  onPreview: (trackRef: any, title: string, kind: 'camera' | 'screen') => void;
+  onError: (message: string) => void;
+}) {
+  const tracks = useParticipantTracks([Track.Source.Camera, Track.Source.ScreenShare, Track.Source.Microphone], participant.identity);
+  const isSpeaking = useIsSpeaking(participant);
+  const displayName = participant.name || lock?.displayName || participant.identity;
+  const isSelf = participant.identity === join.identity;
+  const cameraTrack = tracks.find((track) => track.source === Track.Source.Camera);
+  const screenTrack = tracks.find((track) => track.source === Track.Source.ScreenShare);
+  const audioTrack = tracks.find((track) => track.source === Track.Source.Microphone);
+  const cameraLive = isTrackLive(cameraTrack);
+  const screenLive = isTrackLive(screenTrack);
+  const audioLive = isTrackLive(audioTrack);
+
+  return (
+    <article className="participant-card">
+      <header className="participant-header">
+        <div className="participant-name">
+          {displayName}
+          {isSelf && <span className="participant-status">我</span>}
+          <SpeakingIndicator active={isSpeaking} />
+        </div>
+        <span className="participant-status">{audioLive ? '麦克风开启' : '麦克风关闭'}</span>
+        <ParticipantAdminActions join={join} participant={participant} displayName={displayName} lock={lock} onError={onError} />
+      </header>
+
+      {(lock?.audioLocked || lock?.videoLocked || lock?.screenLocked) && (
+        <div className="media-lock-notice">
+          已限制：{[
+            lock.audioLocked ? '麦克风' : '',
+            lock.videoLocked ? '摄像头' : '',
+            lock.screenLocked ? '屏幕共享' : '',
+          ].filter(Boolean).join('、')}
+        </div>
+      )}
+
+      <section className="media-section">
+        <div className="media-section-header">
+          <span className="media-section-title">摄像头</span>
+          <div className="media-section-actions">
+            {cameraLive && <button className="zoom-btn" onClick={() => onPreview(cameraTrack, `${displayName} - 摄像头放大预览`, 'camera')}>放大</button>}
+          </div>
+        </div>
+        <div className={`media-slot camera-slot ${isSpeaking ? 'speaking' : ''}`}>
+          {cameraLive && cameraTrack ? <VideoTrack trackRef={cameraTrack} /> : <div className="media-placeholder">摄像头未开启</div>}
+        </div>
+      </section>
+
+      <section className="media-section">
+        <div className="media-section-header">
+          <span className="media-section-title">屏幕共享</span>
+          <div className="media-section-actions">
+            {screenLive && <span className="section-badge">共享中</span>}
+            {screenLive && <button className="zoom-btn" onClick={() => onPreview(screenTrack, `${displayName} - 屏幕共享放大预览`, 'screen')}>放大</button>}
+          </div>
+        </div>
+        <div className="media-slot screen-slot">
+          {screenLive && screenTrack ? <VideoTrack trackRef={screenTrack} /> : <div className="media-placeholder">暂无屏幕共享</div>}
+        </div>
+      </section>
+    </article>
+  );
+}
+
+function ParticipantAdminActions({
+  join,
+  participant,
+  displayName,
+  lock,
+  onError,
+}: {
+  join: JoinMeetingResponse;
+  participant: Participant;
+  displayName: string;
+  lock?: MediaControlPayload;
+  onError: (message: string) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  if (join.role !== 'host' || participant.identity === join.identity) return null;
+
+  async function admin(action: string, payload: Record<string, unknown>, confirmText?: string) {
+    if (confirmText && !window.confirm(confirmText)) return;
+    setBusy(true);
+    try {
+      await api.admin(join.roomCode, action, {
+        identity: join.identity,
+        participantKey: join.participantKey,
+        ...payload,
+      });
+    } catch (error: any) {
+      onError(error.message || '主持人操作失败');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const targetIdentity = participant.identity;
+  return (
+    <div className="participant-admin-actions">
+      <button className="participant-kick-btn participant-chat-mute-btn" disabled={busy} onClick={() => admin('chat-mute', { targetIdentity, muted: true })}>禁言</button>
+      <button className="participant-kick-btn participant-chat-mute-btn" disabled={busy} onClick={() => admin('chat-mute', { targetIdentity, muted: false })}>解禁</button>
+      <button className="participant-kick-btn participant-media-control-btn" disabled={busy} onClick={() => admin('media-lock', { targetIdentity, mediaType: 'audio', locked: !lock?.audioLocked })}>{lock?.audioLocked ? '开麦' : '关麦'}</button>
+      <button className="participant-kick-btn participant-video-control-btn" disabled={busy} onClick={() => admin('media-lock', { targetIdentity, mediaType: 'video', locked: !lock?.videoLocked })}>{lock?.videoLocked ? '开摄像头' : '关摄像头'}</button>
+      <button className="participant-kick-btn participant-screen-control-btn" disabled={busy} onClick={() => admin('media-lock', { targetIdentity, mediaType: 'screen', locked: !lock?.screenLocked })}>{lock?.screenLocked ? '解屏幕' : '禁屏幕'}</button>
+      <button className="participant-kick-btn danger-btn" disabled={busy} onClick={() => admin('kick', { targetIdentity }, `确认将 ${displayName} 踢出会议吗？`)}>踢出</button>
+    </div>
+  );
+}
+
+function MeetingControlBar({
+  canPublishLocalMedia,
+  lock,
+  onError,
+}: {
+  canPublishLocalMedia: boolean;
+  lock?: MediaControlPayload;
+  onError: (message: string) => void;
+}) {
+  const { isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled, localParticipant } = useLocalParticipant();
+
+  async function toggle(kind: 'audio' | 'video' | 'screen') {
+    try {
+      if (kind === 'audio') await localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled);
+      if (kind === 'video') await localParticipant.setCameraEnabled(!isCameraEnabled);
+      if (kind === 'screen') await localParticipant.setScreenShareEnabled(!isScreenShareEnabled);
+    } catch (error: any) {
+      onError(error.message || '媒体设备操作失败');
+    }
+  }
+
+  const audioDisabled = !canPublishLocalMedia || !!lock?.audioLocked;
+  const videoDisabled = !canPublishLocalMedia || !!lock?.videoLocked;
+  const screenDisabled = !canPublishLocalMedia || !!lock?.screenLocked;
+
+  return (
+    <div className="actions meeting-controls">
+      <button disabled={audioDisabled} onClick={() => toggle('audio')}>{isMicrophoneEnabled ? '关闭麦克风' : '开启麦克风'}</button>
+      <button disabled={videoDisabled} onClick={() => toggle('video')}>{isCameraEnabled ? '关闭摄像头' : '开启摄像头'}</button>
+      <button disabled={screenDisabled} onClick={() => toggle('screen')}>{isScreenShareEnabled ? '停止共享屏幕' : '开始共享屏幕'}</button>
+    </div>
+  );
+}
+
+function SpeakingIndicator({ active }: { active: boolean }) {
+  return (
+    <span className={`speaking-indicator ${active ? 'active level-2' : 'idle'}`}>
+      <span className="speaking-dot" />
+      <span className="speaking-bars"><span /><span /><span /></span>
+    </span>
+  );
+}
+
+function isTrackLive(trackRef: ReturnType<typeof useParticipantTracks>[number] | undefined) {
+  return !!trackRef && !trackRef.publication.isMuted;
+}
+
+function upsertMediaControl(participants: MediaControlPayload[], participant: MediaControlPayload) {
+  return [...participants.filter((item) => item.identity !== participant.identity), participant];
 }

@@ -42,10 +42,12 @@ export function EntryPage({ onJoined }: { onJoined: () => void }) {
     setCreateMessage('');
     const form = new FormData(event.currentTarget);
     try {
+      const roomCode = String(form.get('roomCode') ?? '').toUpperCase();
+      const title = String(form.get('title') ?? '').trim() || `会议 ${roomCode}`;
       // 创建会议成功后服务端会同时让主持人加入会议，并返回 LiveKit/participantKey 上下文。
       const join = await api.createMeeting({
-        roomCode: String(form.get('roomCode') ?? ''),
-        title: String(form.get('title') ?? ''),
+        roomCode,
+        title,
         password: String(form.get('password') ?? '') || undefined,
       });
       saveJoin(join);
@@ -75,94 +77,122 @@ export function EntryPage({ onJoined }: { onJoined: () => void }) {
 
   return (
     <main className="entry-page">
-      {/* 首屏说明当前系统能力；不承担路由逻辑。 */}
-      <section className="hero">
-        <p className="eyebrow">rtcLive TS</p>
-        <h1>生产化 LiveKit 会议系统</h1>
-        <p>主持人登录创建会议，访客通过会议号加入。聊天、白板、文件和主持人控制都已迁移到 TypeScript 架构。</p>
-      </section>
-
-      <div className="entry-grid">
-        {/* 主持人账号区：创建会议前必须先登录。 */}
-        <section className="card">
-          <div className="card-head">
-            <h2>{mode === 'login' ? '主持人登录' : '主持人注册'}</h2>
-            <button type="button" className="ghost" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
-              切换到{mode === 'login' ? '注册' : '登录'}
-            </button>
+      <div className="entry-shell">
+        <section className="entry-card">
+          <div className="entry-card-head">
+            <h1>创建会议</h1>
+            <p>输入 4 位会议号，可设置可选密码。TS 版保留主持人账号体系，创建前需要先登录。</p>
           </div>
-          <form onSubmit={handleAuth} className="stack">
-            {mode === 'register' && <input name="displayName" placeholder="主持人昵称" maxLength={20} required />}
-            <input name="email" placeholder="邮箱" type="email" required />
-            <input name="password" placeholder="密码，至少 8 位" type="password" required />
-            <button className="primary">{mode === 'login' ? '登录' : '注册并登录'}</button>
+
+          <form onSubmit={handleAuth} className="entry-form auth-form">
+            <div className="entry-list-head">
+              <h2>{mode === 'login' ? '主持人登录' : '主持人注册'}</h2>
+              <button type="button" className="entry-secondary-btn" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
+                切换到{mode === 'login' ? '注册' : '登录'}
+              </button>
+            </div>
+            {mode === 'register' && (
+              <label className="entry-field">
+                <span>主持人昵称</span>
+                <input name="displayName" maxLength={20} placeholder="请输入主持人昵称" required />
+              </label>
+            )}
+            <label className="entry-field">
+              <span>邮箱</span>
+              <input name="email" type="email" placeholder="请输入邮箱" required />
+            </label>
+            <label className="entry-field">
+              <span>密码</span>
+              <input name="password" type="password" placeholder="至少 8 位" required />
+            </label>
+            <button className="entry-primary-btn">{mode === 'login' ? '登录' : '注册并登录'}</button>
             {hasToken && (
-              <button type="button" className="ghost" onClick={() => { writeTokens(null); location.reload(); }}>
+              <button type="button" className="entry-secondary-btn" onClick={() => { writeTokens(null); location.reload(); }}>
                 清除当前登录
               </button>
             )}
             {authMessage && <p className="message">{authMessage}</p>}
           </form>
-        </section>
 
-        {/* 创建会议区：只有登录主持人可以提交。 */}
-        <section className="card">
-          <h2>创建会议</h2>
-          <form onSubmit={handleCreate} className="stack">
-            <input name="roomCode" placeholder="4 位会议号，例如 A1B2" maxLength={4} required />
-            <input name="title" placeholder="会议标题" maxLength={80} required />
-            <input name="password" placeholder="会议密码（可选）" maxLength={32} type="password" />
-            <button className="primary" disabled={!hasToken}>创建并进入</button>
+          <form onSubmit={handleCreate} className="entry-form">
+            <label className="entry-field">
+              <span>会议号</span>
+              <input name="roomCode" maxLength={4} placeholder="例如 A1B2" required />
+            </label>
+            <label className="entry-field">
+              <span>会议标题（可选）</span>
+              <input name="title" maxLength={80} placeholder="不填则使用会议号" />
+            </label>
+            <label className="entry-field">
+              <span>会议密码（可选）</span>
+              <input name="password" type="password" maxLength={32} placeholder="不填则不设密码" />
+            </label>
+            <button className="entry-primary-btn" disabled={!hasToken}>创建并进入会议</button>
             {!hasToken && <p className="hint">请先登录主持人账号。</p>}
             {createMessage && <p className="message">{createMessage}</p>}
           </form>
         </section>
 
-        {/* 加入会议区：面向访客，返回 guest 角色的加入上下文。 */}
-        <section className="card">
-          <h2>加入会议</h2>
-          <form onSubmit={handleJoin} className="stack">
-            <input name="roomCode" placeholder="会议号" maxLength={4} required />
-            <input name="displayName" placeholder="你的昵称" maxLength={20} required />
-            <input name="password" placeholder="会议密码（如有）" maxLength={32} type="password" />
-            <button className="primary">进入会议</button>
+        <section className="entry-card">
+          <div className="entry-card-head">
+            <h1>参会</h1>
+            <p>输入已有会议号和昵称，或从进行中的会议室列表里选择。</p>
+          </div>
+
+          <form onSubmit={handleJoin} className="entry-form">
+            <label className="entry-field">
+              <span>会议号</span>
+              <input name="roomCode" maxLength={4} placeholder="请输入会议号" required />
+            </label>
+            <label className="entry-field">
+              <span>昵称</span>
+              <input name="displayName" maxLength={20} placeholder="请输入你的昵称" required />
+            </label>
+            <label className="entry-field">
+              <span>会议密码</span>
+              <input name="password" type="password" maxLength={32} placeholder="有密码的会议请输入密码" />
+            </label>
+            <button className="entry-primary-btn">进入会议</button>
             {joinMessage && <p className="message">{joinMessage}</p>}
           </form>
-        </section>
 
-        {/* 活动会议列表：公开展示当前可加入的会议。 */}
-        <section className="card wide">
-          <div className="card-head">
-            <h2>进行中的会议</h2>
-            <button type="button" className="ghost" onClick={() => activeRooms.refetch()}>刷新</button>
-          </div>
-          <div className="room-list">
-            {(activeRooms.data ?? []).map((room) => (
-              <div className="room-row" key={room.roomCode}>
-                <strong>{room.roomCode}</strong>
-                <span>{room.title}</span>
-                <span>{room.participantCount} 人</span>
-                <span>{room.passwordProtected ? '有密码' : '无密码'}</span>
-              </div>
-            ))}
-            {!activeRooms.data?.length && <p className="hint">当前没有进行中的会议。</p>}
+          <div className="entry-list-wrap">
+            <div className="entry-list-head">
+              <h2>进行中的会议室</h2>
+              <button type="button" className="entry-secondary-btn" onClick={() => activeRooms.refetch()}>刷新</button>
+            </div>
+            <div className="entry-room-list">
+              {(activeRooms.data ?? []).map((room) => (
+                <div className="entry-room-item" key={room.roomCode}>
+                  <div className="entry-room-top">
+                    <div className="entry-room-name">{room.roomCode}</div>
+                    <span className="entry-room-meta">{room.participantCount} 人</span>
+                  </div>
+                  <div className="entry-room-meta">管理员：{room.hostDisplayName} | {room.title}</div>
+                  {room.passwordProtected && <div className="entry-room-lock">该会议已设置密码</div>}
+                </div>
+              ))}
+              {!activeRooms.data?.length && <div className="entry-empty">当前没有正在进行中的会议室</div>}
+            </div>
           </div>
         </section>
 
         {hasToken && (
-          /* 主持人的历史会议列表，用于验收会议生命周期状态。 */
-          <section className="card wide">
-            <h2>我的会议历史</h2>
-            <div className="room-list">
+          <section className="entry-card entry-history-card">
+            <div className="entry-list-head">
+              <h2>我的会议历史</h2>
+            </div>
+            <div className="entry-room-list">
               {(history.data ?? []).map((room) => (
-                <div className="room-row" key={`${room.roomCode}-${room.createdAt}`}>
-                  <strong>{room.roomCode}</strong>
-                  <span>{room.title}</span>
-                  <span>{room.status}</span>
-                  <span>{new Date(room.createdAt).toLocaleString()}</span>
+                <div className="entry-room-item" key={`${room.roomCode}-${room.createdAt}`}>
+                  <div className="entry-room-top">
+                    <div className="entry-room-name">{room.roomCode}</div>
+                    <span className="entry-room-meta">{room.status}</span>
+                  </div>
+                  <div className="entry-room-meta">{room.title} | {new Date(room.createdAt).toLocaleString()}</div>
                 </div>
               ))}
-              {!history.data?.length && <p className="hint">还没有历史会议。</p>}
+              {!history.data?.length && <div className="entry-empty">还没有历史会议</div>}
             </div>
           </section>
         )}

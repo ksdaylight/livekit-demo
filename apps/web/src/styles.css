@@ -1,285 +1,539 @@
 :root {
-  /* 全局字体和底色，入口页与会议页都会继承这些基础 token。 */
-  font-family: "Aptos", "Segoe UI", sans-serif;
-  color: #172033;
-  background: #f3efe5;
+  font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+  background: #111;
+  color: #fff;
 }
 
 * {
-  /* 统一盒模型，避免 padding/border 让卡片和面板在响应式布局里溢出。 */
   box-sizing: border-box;
 }
 
-body {
+html,
+body,
+#root {
   margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
 }
 
 button,
 input,
-select {
-  /* 表单控件继承页面字体，避免浏览器默认字体和应用字体不一致。 */
+select,
+textarea {
   font: inherit;
 }
 
 button {
-  /* 默认按钮样式用于主要操作，具体语义色由 .primary/.danger/.ghost 覆盖。 */
-  border: 0;
-  border-radius: 12px;
-  padding: 10px 14px;
-  background: #172033;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: #2d6cdf;
   color: #fff;
   cursor: pointer;
 }
 
 button:disabled {
-  /* 禁用状态同时降低视觉权重并移除可点击暗示。 */
-  opacity: 0.5;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 input,
-select {
-  /* 统一输入框外观，适配入口表单和主持人控制面板。 */
-  width: 100%;
-  border: 1px solid #d8d0c2;
-  border-radius: 12px;
-  padding: 11px 12px;
-  background: #fffaf1;
-  color: #172033;
+select,
+textarea {
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  background: #101010;
+  color: #f5f5f5;
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(56, 189, 248, 0.75);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.18);
 }
 
 .entry-page {
-  /* 入口页采用轻量渐变背景，突出创建/加入会议卡片。 */
   min-height: 100vh;
-  padding: 48px;
+  padding: 32px;
   background:
-    radial-gradient(circle at 15% 15%, rgba(219, 99, 55, 0.22), transparent 26%),
-    radial-gradient(circle at 85% 5%, rgba(39, 103, 96, 0.22), transparent 22%),
-    linear-gradient(135deg, #f7efe0 0%, #e9e1d1 100%);
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(251, 146, 60, 0.16), transparent 25%),
+    #0f172a;
+  color: #e2e8f0;
 }
 
-.hero {
-  /* hero 区只放产品名称和一句能力说明，不参与表单布局。 */
-  max-width: 980px;
-  margin-bottom: 32px;
-}
-
-.hero h1 {
-  /* clamp 限制大标题在移动端和桌面端的字号范围。 */
-  margin: 0;
-  font-size: clamp(42px, 8vw, 92px);
-  line-height: 0.9;
-  letter-spacing: -0.06em;
-}
-
-.hero p {
-  max-width: 760px;
-  font-size: 18px;
-  color: #5f5548;
-}
-
-.eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.entry-grid {
-  /* 三列表单布局：登录、创建、加入；宽卡片通过 .wide 跨列。 */
+.entry-shell {
+  max-width: 1280px;
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
 }
 
-.card,
-.panel {
-  /* card 用于入口页表单，panel 用于会议页侧边栏，保持同一套视觉语言。 */
-  border: 1px solid rgba(23, 32, 51, 0.1);
+.entry-card {
+  border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 24px;
-  padding: 22px;
-  background: rgba(255, 250, 241, 0.82);
-  box-shadow: 0 24px 70px rgba(64, 50, 29, 0.13);
-  backdrop-filter: blur(14px);
+  background: rgba(15, 23, 42, 0.88);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.45);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  backdrop-filter: blur(10px);
 }
 
-.wide {
-  /* 入口页的列表区域需要横跨三列。 */
-  grid-column: span 3;
+.entry-history-card {
+  grid-column: 1 / -1;
 }
 
-.card-head,
-.meeting-topbar,
-.room-row {
+.entry-card-head h1,
+.entry-list-head h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 28px;
+}
+
+.entry-list-head h2 {
+  font-size: 22px;
+}
+
+.entry-card-head p,
+.hint {
+  margin: 8px 0 0;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.entry-form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-form {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  padding-bottom: 24px;
+}
+
+.entry-field {
+  display: grid;
+  gap: 8px;
+}
+
+.entry-field span {
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.entry-field input {
+  height: 46px;
+  padding: 0 14px;
+  font-size: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.95);
+  color: #f8fafc;
+}
+
+.entry-primary-btn,
+.entry-secondary-btn {
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.entry-primary-btn {
+  height: 48px;
+  background: linear-gradient(135deg, #22c55e, #14b8a6);
+  color: #052e16;
+}
+
+.entry-secondary-btn {
+  min-height: 38px;
+  padding: 0 16px;
+  background: rgba(59, 130, 246, 0.16);
+  color: #bfdbfe;
+}
+
+.entry-list-wrap {
+  display: grid;
+  gap: 14px;
+}
+
+.entry-list-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.stack {
+.entry-room-list {
   display: grid;
+  gap: 12px;
+  min-height: 160px;
+}
+
+.entry-room-item {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  background: rgba(30, 41, 59, 0.72);
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.entry-room-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
-.compact {
-  gap: 8px;
+.entry-room-name {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
-.primary {
-  /* 主要动作使用暖色，和默认深色按钮区分。 */
-  background: #cc5a32;
+.entry-room-meta {
+  color: #94a3b8;
+  font-size: 13px;
 }
 
-.ghost {
-  /* 次要动作保留边框，不抢主要按钮视觉层级。 */
-  background: transparent;
-  border: 1px solid #d6c9b7;
-  color: #172033;
+.entry-room-lock {
+  color: #fbbf24;
+  font-size: 13px;
 }
 
-.danger {
-  /* 离开/解散等不可逆或高风险动作使用危险色。 */
-  background: #8f2e25;
+.entry-empty {
+  min-height: 160px;
+  border: 1px dashed rgba(148, 163, 184, 0.24);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
 }
 
 .message {
   margin: 0;
-  color: #8f2e25;
+  color: #fca5a5;
 }
 
-.hint {
-  color: #6c6257;
-}
-
-.room-list {
-  display: grid;
-  gap: 8px;
-}
-
-.room-row {
-  /* 会议列表每行保持统一间距，便于快速扫描会议号、标题和状态。 */
-  padding: 12px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.62);
+.hidden {
+  display: none !important;
 }
 
 .meeting-page {
-  /* 会议页切到深色背景，降低视频区域周围的视觉干扰。 */
   min-height: 100vh;
-  background: #101820;
-  color: #f7efe0;
+  display: flex;
+  flex-direction: column;
+  background: #111;
+  color: #fff;
 }
 
 .meeting-topbar {
-  /* 顶部栏展示会议元信息和离开按钮，始终保持在页面上方。 */
-  padding: 16px 22px;
-  background: rgba(255, 250, 241, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 16px;
+  background: #1c1c1c;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
 }
 
 .meeting-topbar div {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
   align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.meeting-topbar span {
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.danger,
+.actions button.danger-btn,
+.participant-admin-actions .danger-btn {
+  background: #c0392b;
+}
+
+.banner {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: #f5c36d;
+  color: #172033;
 }
 
 .meeting-layout {
-  /* 桌面端左侧视频占主要宽度，右侧固定 420px 放实时面板。 */
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 420px;
-  gap: 16px;
-  padding: 16px;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 12px;
+  padding: 12px;
+}
+
+.meeting-layout.without-admin {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.meeting-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .video-area {
-  /* LiveKit 视频区域需要裁切内部内容，避免 tile 溢出圆角容器。 */
-  min-height: calc(100vh - 100px);
-  border-radius: 24px;
-  overflow: hidden;
-  background: #0b1118;
+  min-height: 520px;
+  display: flex;
+  background: #111;
 }
 
-.lk-grid {
-  /* 预留底部控制栏空间，防止视频网格被 ControlBar 覆盖。 */
-  min-height: calc(100vh - 180px);
+.video-area .lk-room-container {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+.meeting-grid {
+  flex: 1;
+  min-height: 420px;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 12px;
+}
+
+.participant-card {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #333;
+  border-radius: 12px;
+  background: #1a1a1a;
+}
+
+.participant-header {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #202020;
+  border-bottom: 1px solid #333;
+  font-size: 14px;
+}
+
+.participant-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.participant-status {
+  margin-left: 8px;
+  color: #bbb;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.participant-admin-actions {
+  max-width: 72%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.participant-kick-btn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.participant-chat-mute-btn {
+  background: #b45309;
+}
+
+.participant-media-control-btn {
+  background: #2563eb;
+}
+
+.participant-video-control-btn {
+  background: #7c3aed;
+}
+
+.participant-screen-control-btn {
+  background: #0f766e;
+}
+
+.media-lock-notice {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background: rgba(192, 57, 43, 0.18);
+  border-bottom: 1px solid rgba(192, 57, 43, 0.35);
+  color: #fecaca;
+  font-size: 13px;
+}
+
+.media-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #333;
+}
+
+.media-section:last-child {
+  border-bottom: none;
+}
+
+.media-section-header {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  background: #181818;
+  border-bottom: 1px solid #2a2a2a;
+  font-size: 13px;
+}
+
+.media-section-title {
+  color: #ddd;
+}
+
+.media-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-badge {
+  color: #f1c40f;
+  font-size: 12px;
+}
+
+.zoom-btn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #2d6cdf;
+  font-size: 12px;
+}
+
+.media-slot {
+  flex: 1;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+}
+
+.media-slot video,
+.preview-content video {
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.camera-slot video {
+  object-fit: cover;
+}
+
+.screen-slot video,
+.preview-content video {
+  object-fit: contain;
+}
+
+.media-placeholder {
+  color: #888;
+  font-size: 14px;
+  text-align: center;
+  padding: 12px;
+}
+
+.meeting-controls {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 0;
+  flex-wrap: wrap;
+}
+
+.meeting-controls button {
+  background: #2d6cdf;
 }
 
 .side-panels {
-  /* 侧边栏独立滚动，视频区保持稳定，不随聊天/文件列表增长而抖动。 */
+  max-height: calc(100vh - 80px);
   display: grid;
-  gap: 14px;
   align-content: start;
-  max-height: calc(100vh - 96px);
+  gap: 12px;
   overflow: auto;
 }
 
 .panel {
-  color: #172033;
+  border: 1px solid #333;
+  border-radius: 12px;
+  background: #151515;
+  color: #f5f5f5;
+  padding: 14px;
 }
 
 .panel h3 {
-  /* 面板标题右侧显示连接状态。 */
   margin: 0 0 12px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
+  font-size: 16px;
 }
 
 .panel h3 span {
+  color: #9ca3af;
   font-size: 12px;
-  color: #6c6257;
+  font-weight: 400;
 }
 
-.scroll-list {
-  /* 聊天和文件列表限制高度，避免单个面板撑满整页。 */
+.stack {
   display: grid;
-  gap: 8px;
-  max-height: 220px;
-  overflow: auto;
+  gap: 10px;
 }
 
-.bubble {
-  /* 聊天气泡基础样式；自己的消息通过 .self 单独区分。 */
-  padding: 10px;
-  border-radius: 14px;
-  background: #fff;
-}
-
-.bubble.self {
-  background: #e2f0d9;
-}
-
-.bubble p {
-  margin: 4px 0 0;
-}
-
-.inline-form {
-  /* 聊天输入框和发送按钮保持一行，提高会议中发送效率。 */
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.file-row {
-  /* 文件消息呈现为可点击下载行。 */
-  display: grid;
-  gap: 4px;
-  padding: 10px;
-  border-radius: 14px;
-  color: inherit;
-  text-decoration: none;
-  background: #fff;
+.compact {
+  margin-top: 12px;
 }
 
 .admin-actions,
 .whiteboard-tools {
-  /* 主持人动作和白板工具都允许换行，窄屏下不会溢出。 */
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+}
+
+.admin-actions button {
+  background: #0f766e;
 }
 
 .checkbox {
@@ -292,39 +546,961 @@ select {
   width: auto;
 }
 
-.whiteboard-panel canvas {
-  /* canvas 固定内部绘制尺寸，CSS 宽高负责响应式展示。 */
-  width: 100%;
-  height: 260px;
-  border-radius: 18px;
+.scroll-list {
+  max-height: 240px;
+  display: grid;
+  gap: 8px;
+  overflow: auto;
+}
+
+.bubble {
+  padding: 10px;
+  border-radius: 10px;
+  background: #202020;
+  border: 1px solid #333;
+}
+
+.bubble.self {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(15, 118, 110, 0.22);
+}
+
+.bubble p {
+  margin: 4px 0 0;
+  color: #d1d5db;
+}
+
+.inline-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
   margin-top: 10px;
+}
+
+.inline-form input,
+.file-target select,
+.panel input,
+.panel select {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+}
+
+.panel .checkbox {
+  justify-content: flex-start;
+  white-space: nowrap;
+}
+
+.panel .checkbox input[type="checkbox"] {
+  width: 16px;
+  min-height: 16px;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.panel input[type="file"] {
+  padding: 6px;
+  color: #d1d5db;
+}
+
+.panel input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: #2d6cdf;
+  color: #fff;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.file-target {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+  color: #d1d5db;
+  font-size: 13px;
+}
+
+.file-row {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid #333;
+  border-radius: 10px;
+  background: #202020;
+  color: inherit;
+  text-decoration: none;
+}
+
+.file-row span {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.whiteboard-panel {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.whiteboard-toolbar {
+  min-height: 56px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #2b2b2b;
+}
+
+.whiteboard-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f5f5f5;
+  flex-wrap: wrap;
+}
+
+.whiteboard-status {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.whiteboard-status.pending {
+  color: #fde68a;
+}
+
+.whiteboard-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.whiteboard-zoom-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.whiteboard-zoom-label {
+  min-width: 52px;
+  color: #d1d5db;
+  text-align: center;
+  font-size: 13px;
+}
+
+.whiteboard-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #d1d5db;
+  font-size: 13px;
+}
+
+.whiteboard-control input,
+.whiteboard-control select {
+  height: 34px;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  background: #101010;
+  color: #f5f5f5;
+}
+
+.whiteboard-control input[type="color"] {
+  width: 42px;
+  height: 34px;
+  padding: 3px;
+}
+
+.whiteboard-control select {
+  height: 34px;
+  padding: 0 10px;
+}
+
+.whiteboard-btn,
+.whiteboard-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.whiteboard-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.whiteboard-upload-btn input {
+  display: none;
+}
+
+.whiteboard-stage {
+  position: relative;
+  height: 300px;
+  background:
+    linear-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+    #fff;
+  background-size: 24px 24px;
+}
+
+.whiteboard-stage canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
   background: #fff;
   touch-action: none;
+  cursor: crosshair;
 }
 
-.banner {
-  /* 错误/权限/媒体能力提示横幅，放在会议顶部确保用户能立即看到。 */
+.whiteboard-stage canvas.panning {
+  cursor: grab;
+}
+
+.whiteboard-stage canvas.placing-image {
+  cursor: copy;
+}
+
+.chat-widget-btn {
+  position: fixed;
+  right: 18px;
+  bottom: 94px;
+  z-index: 1100;
+  width: 64px;
+  height: 64px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f97316, #dc2626);
+  color: #fff7ed;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.45);
+}
+
+.chat-unread-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chat-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
+
+.chat-backdrop {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.chat-panel {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  width: min(520px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 40px));
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  border: 1px solid #333;
+  border-radius: 16px;
+  background: #151515;
+  overflow: hidden;
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.45);
+}
+
+.chat-toolbar {
+  min-height: 56px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #171717;
+  border-bottom: 1px solid #2b2b2b;
+}
+
+.chat-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-danmaku-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #cbd5e1;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.chat-danmaku-toggle input {
+  width: auto;
+}
+
+.chat-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f5f5f5;
+}
+
+.chat-status {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.chat-close-btn {
+  min-width: 74px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: #334155;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.chat-messages {
+  overflow: auto;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  background: #111;
+}
+
+.chat-empty {
+  min-height: 120px;
+  border: 1px dashed #2f2f2f;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7b8594;
+  font-size: 13px;
+}
+
+.chat-message-row {
+  display: flex;
+}
+
+.chat-message-row.self {
+  justify-content: flex-end;
+}
+
+.chat-message-row.other {
+  justify-content: flex-start;
+}
+
+.chat-message-item {
+  width: fit-content;
+  min-width: 120px;
+  max-width: min(72%, 420px);
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid #2f2f2f;
+  border-radius: 14px;
+  background: #181818;
+}
+
+.chat-message-item.self {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(29, 78, 216, 0.38));
+}
+
+.chat-message-item.other {
+  border-color: rgba(148, 163, 184, 0.14);
+  background: #1b1b1b;
+}
+
+.chat-message-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chat-message-sender {
+  color: #dbeafe;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chat-message-time {
+  color: #94a3b8;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.chat-message-content {
+  color: #e5e7eb;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-input-area {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid #2b2b2b;
+  background: #171717;
+}
+
+.chat-input-area textarea {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.chat-input-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chat-mute-tip {
+  color: #fca5a5;
+  font-size: 12px;
+}
+
+.chat-send-btn {
+  min-width: 88px;
+  height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #eff6ff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.chat-send-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.chat-danmaku-layer {
+  position: fixed;
+  inset: 72px 24px 24px;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.chat-danmaku-item {
+  position: absolute;
+  right: -20%;
+  padding: 8px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: auto;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.22);
+  animation: chatDanmakuMove 16s linear forwards;
+}
+
+.chat-danmaku-item:hover {
+  animation-play-state: paused;
+}
+
+.file-transfer-widget-btn {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 1100;
+  width: 64px;
+  height: 64px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #0f766e);
+  color: #eff6ff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.45);
+}
+
+.file-transfer-unread-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.file-transfer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
+
+.file-transfer-backdrop {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.file-transfer-panel {
+  position: absolute;
+  right: 20px;
+  bottom: 92px;
+  width: min(560px, calc(100vw - 32px));
+  border: 1px solid #333;
+  border-radius: 16px;
+  background: #151515;
+  overflow: hidden;
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.45);
+}
+
+.file-transfer-toolbar {
+  min-height: 56px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #171717;
+  border-bottom: 1px solid #2b2b2b;
+}
+
+.file-transfer-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f5f5f5;
+}
+
+.file-transfer-status {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.file-transfer-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.file-transfer-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #d1d5db;
+  font-size: 13px;
+}
+
+.file-transfer-target select {
+  min-width: 170px;
+  height: 34px;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  background: #101010;
+  color: #f5f5f5;
+  padding: 0 10px;
+}
+
+.file-transfer-upload-btn,
+.file-transfer-close-btn {
+  min-width: 88px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.file-transfer-upload-btn {
+  background: #2563eb;
+  color: #eff6ff;
+}
+
+.file-transfer-upload-btn input {
+  display: none;
+}
+
+.file-transfer-close-btn {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.file-transfer-list {
+  max-height: 360px;
+  display: grid;
+  gap: 10px;
+  overflow: auto;
+  padding: 12px;
+  background: #111;
+}
+
+.file-transfer-empty {
+  min-height: 120px;
+  border: 1px dashed #2f2f2f;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7b8594;
+  font-size: 13px;
+}
+
+.file-transfer-item {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #2f2f2f;
+  border-radius: 10px;
+  background: #181818;
+}
+
+.file-transfer-item.broadcast {
+  border-color: rgba(37, 99, 235, 0.45);
+}
+
+.file-transfer-item.direct {
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+.file-transfer-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.file-transfer-item-title {
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.file-transfer-item-meta {
+  min-width: 140px;
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: right;
+}
+
+.file-transfer-item-download {
+  width: fit-content;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 12px;
+  background: #0f766e;
+  color: #ecfeff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.file-danmaku-layer {
+  position: fixed;
+  inset: 112px 24px 72px;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1001;
+}
+
+.file-danmaku-item {
+  position: absolute;
+  right: -25%;
   padding: 10px 16px;
-  background: #f5c36d;
-  color: #172033;
+  border: 1px solid rgba(191, 219, 254, 0.38);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.94), rgba(15, 118, 110, 0.94));
+  color: #eff6ff;
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.28);
+  animation: fileDanmakuMove 18s linear forwards;
 }
 
-@media (max-width: 1100px) {
-  /* 窄屏下入口和会议页都改为单列布局，侧边栏移动到视频下方。 */
-  .entry-page {
-    padding: 24px;
-  }
+.preview-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.92);
+}
 
-  .entry-grid,
+.preview-toolbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: #1b1b1b;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.preview-toolbar button {
+  background: #c0392b;
+}
+
+.preview-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #000;
+}
+
+.speaking-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  font-size: 12px;
+  color: #8f9bb3;
+}
+
+.speaking-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #4b5563;
+  transition: all 0.15s ease;
+  box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+}
+
+.speaking-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+
+.speaking-bars span {
+  width: 3px;
+  height: 4px;
+  background: #4b5563;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+
+.media-slot.camera-slot.speaking {
+  box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.85), 0 0 12px rgba(34, 197, 94, 0.28);
+}
+
+.speaking-indicator.active .speaking-dot {
+  background: #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.75);
+  animation: speakingPulse 1s infinite ease-in-out;
+}
+
+.speaking-indicator.active .speaking-bars span {
+  background: #22c55e;
+  animation: speakingBars 0.9s infinite ease-in-out;
+}
+
+.speaking-indicator.active .speaking-bars span:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.speaking-indicator.active .speaking-bars span:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.speaking-indicator.idle {
+  opacity: 0.75;
+}
+
+@keyframes speakingPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+@keyframes speakingBars {
+  0% { height: 4px; }
+  50% { height: 12px; }
+  100% { height: 6px; }
+}
+
+@keyframes chatDanmakuMove {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-170vw);
+  }
+}
+
+@keyframes fileDanmakuMove {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-185vw);
+  }
+}
+
+@media (max-width: 1180px) {
   .meeting-layout {
     grid-template-columns: 1fr;
   }
 
-  .wide {
-    grid-column: span 1;
-  }
-
   .side-panels {
     max-height: none;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .entry-page {
+    padding: 16px;
+  }
+
+  .entry-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .meeting-grid {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
+
+  .participant-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .participant-admin-actions {
+    max-width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 900px) {
+  .chat-panel {
+    left: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+    height: min(560px, calc(100vh - 24px));
+  }
+
+  .chat-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .chat-toolbar-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .chat-widget-btn {
+    bottom: 88px;
+  }
+
+  .chat-danmaku-layer {
+    inset: 72px 10px 18px;
+  }
+
+  .file-transfer-panel {
+    right: 12px;
+    bottom: 88px;
+    width: calc(100vw - 24px);
+  }
+
+  .file-transfer-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .file-transfer-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .file-transfer-target select {
+    min-width: 132px;
+  }
+
+  .file-danmaku-layer {
+    inset: 124px 10px 72px;
+  }
+
+  .whiteboard-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .whiteboard-controls {
+    justify-content: flex-start;
+  }
+
+  .whiteboard-stage {
+    height: 240px;
   }
 }

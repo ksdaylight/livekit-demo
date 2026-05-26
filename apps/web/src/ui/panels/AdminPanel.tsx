@@ -1,10 +1,19 @@
 import { FormEvent, useState } from 'react';
-import type { JoinMeetingResponse } from '@rtclive/shared';
+import type { JoinMeetingResponse, MediaControlPayload } from '@rtclive/shared';
 import { api } from '../../lib/api';
 
-// 主持人控制面板。当前 UI 直接输入目标 identity，后续可接入参与者列表做选择器。
-export function AdminPanel({ join, onDissolved }: { join: JoinMeetingResponse; onDissolved: () => void }) {
+// 主持人控制面板负责会议级操作；单个参与者操作同时出现在视频卡片上。
+export function AdminPanel({
+  join,
+  participants,
+  onDissolved,
+}: {
+  join: JoinMeetingResponse;
+  participants: MediaControlPayload[];
+  onDissolved: () => void;
+}) {
   const [message, setMessage] = useState('');
+  const targets = participants.filter((participant) => participant.identity !== join.identity);
 
   async function call(action: string, payload: Record<string, unknown> = {}) {
     setMessage('');
@@ -44,7 +53,14 @@ export function AdminPanel({ join, onDissolved }: { join: JoinMeetingResponse; o
       </div>
       {/* 媒体控制目前按 identity 定向，适合验收阶段手动测试主持人控制能力。 */}
       <form className="stack compact" onSubmit={lock}>
-        <input name="targetIdentity" placeholder="目标 identity" />
+        <select name="targetIdentity" required>
+          <option value="">选择参会者</option>
+          {targets.map((participant) => (
+            <option key={participant.identity} value={participant.identity}>
+              {participant.displayName || participant.identity}
+            </option>
+          ))}
+        </select>
         <select name="mediaType">
           <option value="audio">麦克风</option>
           <option value="video">摄像头</option>
