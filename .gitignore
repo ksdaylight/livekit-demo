@@ -1,11 +1,13 @@
 node_modules/
 dist/
 coverage/
-.env
-.env.local
 .DS_Store
 *.log
 apps/api/prisma/migrations/dev.db
 apps/web/.vite/
 playwright-report/
 test-results/
+temp_auto_push.bat
+temp_interactive_push.bat
+branch_structure.json
+config.bat

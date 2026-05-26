@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "commonjs",
   "scripts": {
-    "dev": "nest start --watch",
-    "build": "nest build",
-    "start": "node dist/apps/api/src/main.js",
+    "dev": "node init && nest start --watch",
+    "build": "node init && nest build",
+    "start": "node init && node dist/apps/api/src/main.js",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",

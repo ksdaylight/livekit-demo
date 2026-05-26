@@ -8,7 +8,9 @@ export interface RequestUser {
 }
 
 // 控制器参数装饰器，避免每个接口手动从 request 上读取 user。
-export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionContext): RequestUser => {
-  const request = ctx.switchToHttp().getRequest<{ user: RequestUser }>();
-  return request.user;
-});
+export const CurrentUser = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext): RequestUser | undefined => {
+    const request = ctx.switchToHttp().getRequest<{ user?: RequestUser }>();
+    return request.user;
+  },
+);

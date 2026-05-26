@@ -1,4 +1,9 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import {
@@ -21,7 +26,10 @@ export class MeetingService {
     private readonly participants: ParticipantService,
   ) {}
 
-  async createMeeting(host: { id: string; displayName: string }, input: CreateMeetingInput): Promise<JoinMeetingResponse> {
+  async createMeeting(
+    host: { id: string; displayName: string },
+    input: CreateMeetingInput,
+  ): Promise<JoinMeetingResponse> {
     // roomCode 已由 Schema 规范化；这里再次转大写，保护直接调用服务层的测试或内部代码。
     const roomCode = input.roomCode.toUpperCase();
     const existing = await this.prisma.meeting.findUnique({ where: { roomCode } });
@@ -38,7 +46,9 @@ export class MeetingService {
         roomCode,
         title: input.title,
         hostId: host.id,
-        passwordHash: input.password ? await argon2.hash(input.password, { type: argon2.argon2id }) : null,
+        passwordHash: input.password
+          ? await argon2.hash(input.password, { type: argon2.argon2id })
+          : null,
       },
     });
     // 创建 host 参与者后，前端会用这条记录的 identity 建立 LiveKit 和业务 WebSocket。
@@ -56,7 +66,11 @@ export class MeetingService {
     return this.buildJoinResponse(meeting, participant, participantKey);
   }
 
-  async joinMeeting(roomCodeRaw: string, input: JoinMeetingInput): Promise<JoinMeetingResponse> {
+  async joinMeeting(
+    roomCodeRaw: string,
+    input: JoinMeetingInput,
+    currentUser?: { id: string; displayName: string },
+  ): Promise<JoinMeetingResponse> {
     const roomCode = roomCodeRaw.toUpperCase();
     // 加载 participants 是为了检查当前在线昵称是否重复。
     const meeting = await this.prisma.meeting.findUnique({
@@ -65,6 +79,9 @@ export class MeetingService {
     });
     if (!meeting || meeting.status !== 'active') {
       throw new NotFoundException('会议不存在');
+    }
+    if (currentUser?.id === meeting.hostId) {
+      return this.joinHostMeeting(meeting, currentUser);
     }
     if (meeting.passwordHash) {
       // 有密码的会议必须提供正确密码；无密码会议忽略输入 password。
@@ -75,7 +92,9 @@ export class MeetingService {
     }
     // 同一会议内在线昵称不允许重复，避免聊天/文件/管理面板中无法区分参与者。
     const displayNameTaken = meeting.participants.some(
-      (participant) => !participant.leftAt && participant.displayName.toLowerCase() === input.displayName.toLowerCase(),
+      (participant) =>
+        !participant.leftAt &&
+        participant.displayName.toLowerCase() === input.displayName.toLowerCase(),
     );
     if (displayNameTaken) {
       throw new ConflictException('当前会议中该昵称已被使用，请更换昵称');
@@ -93,6 +112,59 @@ export class MeetingService {
       },
     });
     await this.livekit.ensureRoom(roomCode);
+    return this.buildJoinResponse(meeting, participant, participantKey);
+  }
+
+  private async joinHostMeeting(
+    meeting: {
+      id: string;
+      roomCode: string;
+      title: string;
+      passwordHash: string | null;
+      participants: Array<{
+        id: string;
+        identity: string;
+        displayName: string;
+        role: string;
+        joinedAt: Date;
+        leftAt: Date | null;
+      }>;
+    },
+    host: { displayName: string },
+  ): Promise<JoinMeetingResponse> {
+    const participantKey = this.participants.createParticipantKey();
+    const onlineHost = meeting.participants.some(
+      (participant) => participant.role === 'host' && !participant.leftAt,
+    );
+    const reusableHost = onlineHost
+      ? null
+      : meeting.participants
+          .filter((participant) => participant.role === 'host')
+          .sort((a, b) => b.joinedAt.getTime() - a.joinedAt.getTime())[0];
+
+    if (reusableHost) {
+      const participant = await this.prisma.participant.update({
+        where: { id: reusableHost.id },
+        data: {
+          displayName: host.displayName,
+          leftAt: null,
+          participantKeyHash: await this.participants.hashParticipantKey(participantKey),
+        },
+      });
+      await this.livekit.ensureRoom(meeting.roomCode);
+      return this.buildJoinResponse(meeting, participant, participantKey);
+    }
+
+    const participant = await this.prisma.participant.create({
+      data: {
+        meetingId: meeting.id,
+        identity: `h-${nanoid(10)}`,
+        displayName: host.displayName,
+        role: 'host',
+        participantKeyHash: await this.participants.hashParticipantKey(participantKey),
+      },
+    });
+    await this.livekit.ensureRoom(meeting.roomCode);
     return this.buildJoinResponse(meeting, participant, participantKey);
   }
 
@@ -141,12 +213,19 @@ export class MeetingService {
     return { ok: true };
   }
 
-  async updatePassword(roomCode: string, identity: string, participantKey: string, password?: string) {
+  async updatePassword(
+    roomCode: string,
+    identity: string,
+    participantKey: string,
+    password?: string,
+  ) {
     const host = await this.participants.requireHost(roomCode, identity, participantKey);
     // password 为空时清除 passwordHash，会议立即变为无需密码加入。
     await this.prisma.meeting.update({
       where: { id: host.meetingId },
-      data: { passwordHash: password ? await argon2.hash(password, { type: argon2.argon2id }) : null },
+      data: {
+        passwordHash: password ? await argon2.hash(password, { type: argon2.argon2id }) : null,
+      },
     });
     return { ok: true, passwordProtected: !!password };
   }

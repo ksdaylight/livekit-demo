@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "packageManager": "pnpm@11.2.2",
   "scripts": {
-    "dev": "pnpm --filter @rtclive/shared build && pnpm -r --parallel --filter @rtclive/api --filter @rtclive/web dev",
-    "build": "pnpm -r build",
+    "dev": "node init && pnpm --filter @rtclive/shared build && pnpm -r --parallel --filter @rtclive/api --filter @rtclive/web dev",
+    "build": "node init && pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
