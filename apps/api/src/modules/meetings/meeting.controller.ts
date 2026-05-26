@@ -1,8 +1,14 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { createMeetingSchema, joinMeetingSchema, leaveMeetingSchema, updateMeetingPasswordSchema } from '@rtclive/shared';
+import {
+  createMeetingSchema,
+  joinMeetingSchema,
+  leaveMeetingSchema,
+  updateMeetingPasswordSchema,
+} from '@rtclive/shared';
 import { CurrentUser, RequestUser } from '../../shared/auth-user.decorator';
 import { ZodValidationPipe } from '../../shared/zod-validation.pipe';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { MeetingService } from './meeting.service';
 
 @Controller()
@@ -13,7 +19,10 @@ export class MeetingController {
   @Post('meetings')
   @UseGuards(JwtAuthGuard)
   // 创建会议必须登录；创建者会自动作为 host 加入会议。
-  create(@CurrentUser() user: RequestUser, @Body(new ZodValidationPipe(createMeetingSchema)) body: any) {
+  create(
+    @CurrentUser() user: RequestUser,
+    @Body(new ZodValidationPipe(createMeetingSchema)) body: any,
+  ) {
     return this.meetings.createMeeting(user, body);
   }
 
@@ -31,14 +40,22 @@ export class MeetingController {
   }
 
   @Post('meetings/:roomCode/join')
-  // 游客加入会议。接口会返回 LiveKit token 和业务 WebSocket 需要的 participantKey。
-  join(@Param('roomCode') roomCode: string, @Body(new ZodValidationPipe(joinMeetingSchema)) body: any) {
-    return this.meetings.joinMeeting(roomCode, body);
+  @UseGuards(OptionalJwtAuthGuard)
+  // 游客可匿名加入；会议创建者带登录态重入时会恢复主持人权限。
+  join(
+    @Param('roomCode') roomCode: string,
+    @Body(new ZodValidationPipe(joinMeetingSchema)) body: any,
+    @CurrentUser() user?: RequestUser,
+  ) {
+    return this.meetings.joinMeeting(roomCode, body, user);
   }
 
   @Post('meetings/:roomCode/leave')
   // 离会不要求登录，只要求会议内 participantKey，因为游客没有账号登录态。
-  leave(@Param('roomCode') roomCode: string, @Body(new ZodValidationPipe(leaveMeetingSchema)) body: any) {
+  leave(
+    @Param('roomCode') roomCode: string,
+    @Body(new ZodValidationPipe(leaveMeetingSchema)) body: any,
+  ) {
     return this.meetings.leave(roomCode, body.identity, body.participantKey);
   }
 
@@ -48,12 +65,20 @@ export class MeetingController {
     @Param('roomCode') roomCode: string,
     @Body(new ZodValidationPipe(updateMeetingPasswordSchema)) body: any,
   ) {
-    return this.meetings.updatePassword(roomCode, body.identity, body.participantKey, body.password);
+    return this.meetings.updatePassword(
+      roomCode,
+      body.identity,
+      body.participantKey,
+      body.password,
+    );
   }
 
   @Post('meetings/:roomCode/dissolve')
   // 解散会议会同步删除 LiveKit 房间并标记所有在线参与者离会。
-  dissolve(@Param('roomCode') roomCode: string, @Body(new ZodValidationPipe(leaveMeetingSchema)) body: any) {
+  dissolve(
+    @Param('roomCode') roomCode: string,
+    @Body(new ZodValidationPipe(leaveMeetingSchema)) body: any,
+  ) {
     return this.meetings.dissolve(roomCode, body.identity, body.participantKey);
   }
 }

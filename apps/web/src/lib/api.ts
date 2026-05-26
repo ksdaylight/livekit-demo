@@ -92,10 +92,14 @@ export const api = {
     return request<HostMeetingHistoryItem[]>('/api/v1/host/meetings/history', {}, true);
   },
   join(roomCode: string, input: JoinMeetingInput) {
-    return request<JoinMeetingResponse>(`/api/v1/meetings/${roomCode}/join`, {
-      method: 'POST',
-      body: JSON.stringify(input),
-    });
+    return request<JoinMeetingResponse>(
+      `/api/v1/meetings/${roomCode}/join`,
+      {
+        method: 'POST',
+        body: JSON.stringify(input),
+      },
+      !!readTokens()?.accessToken,
+    );
   },
   leave(join: JoinMeetingResponse) {
     // 游客没有登录态，离会用会议内 identity + participantKey 证明身份。
